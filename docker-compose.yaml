@@ -7,20 +7,33 @@ services:
     networks:
      - mediaserver-net
     ports:
-     - "8080:8080"
+     # - "8080:8080"
      # For HTTPs access
-     # - "443:443"
+     - "80:80"
+     - "443:443"
     volumes:
      - ./conf/nginx/nginx.conf:/etc/nginx/nginx.conf:ro
-     # For HTTPs access
-     # - ./conf/nginx/server-cert.pem://etc/ssl/certs/server-cert.pem:ro
-     # - ./conf/nginx/server-key.pem://etc/ssl/certs/server-key.pem:ro
-     # - ./conf/nginx/dhparam.pem://etc/ssl/certs/dhparam.pem:ro
+     # For HTTPs access, get the up-to-date certificates from the certbot cont.
+    volumes_from:
+      - certbot:ro
     links:
      - transmission
      - sonarr
      - couchpotato
      - plex
+     - certbot
+
+  # Required only if using direct TLS on the Nginx proxy, requires the DOMAIN
+  # and EMAIL env. variables to be set
+  certbot:
+    build: ./certbot
+    image: certbot
+    environment:
+     - DOMAIN="${DOMAIN}"
+     - EMAIL="${EMAIL}"
+    volumes:
+     - /etc/letsencrypt
+     - /var/lib/letsencrypt
 
   transmission:
     image: linuxserver/transmission
